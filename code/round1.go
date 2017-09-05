@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"strings"
+	"sort"
 )
 
 /*
@@ -34,27 +34,38 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	data, errr := ioutil.ReadAll(moby)
+	if errr != nil {
+		panic(err)
+	}
+	moby.Close()
 
-	fmt.Println("Starting 1st Pass", moby.Name())
+	fmt.Println("Starting 1st Pass")
 
 	wordMap := make(map[string][]string) //map[word]pos
 
 	//First pass is to strip data from file
-	reader := bufio.NewReader(moby)
-	for {
-		line, errr := reader.ReadString('\n')
-		if errr != nil {
-			fmt.Println(errr)
-			break
+	soFar := 0
+	for soFar < len(data) {
+		word := bytes.NewBufferString("")
+		other := bytes.NewBufferString("")
+		isWord := true
+		for _, c := range data[soFar:] {
+			soFar++
+			if c == '\n' || c == '\r' {
+				break
+			} else if string(c) == string(215) {
+				isWord = false
+			} else {
+				if isWord {
+					word.WriteString(string(c))
+				} else {
+					other.WriteString(string(c))
+				}
+			}
 		}
-		fmt.Println(line)
-
-		columns := strings.Split(line, string(215)) //POS is split by ASCII 215
-		wordMap[columns[0]] = []string{columns[1], ""}
-		fmt.Println("hey")
+		wordMap[word.String()] = []string{other.String(), ""}
 	}
-
-	moby.Close()
 
 	fmt.Println("Starting 2nd Pass")
 
@@ -128,7 +139,16 @@ func main() {
 
 	w := csv.NewWriter(csvFile)
 
-	for word, data := range wordMap {
+	//Sort the Keys because why not.
+	keys := make([]string, 0, len(wordMap))
+	for k := range wordMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, word := range keys {
+		data := wordMap[word]
 		record := []string{word, "nil", data[0], data[1]}
 		w.Write(record)
 	}
