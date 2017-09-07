@@ -93,12 +93,15 @@ func main() {
 	fmt.Println("Starting 3rd Pass: Matching data ")
 
 	//Third pass is to match the data against each other
+	num := 0
 	for i, entry := range csv1Data {
 		if def, ok := dictData[entry[0]]; ok {
 			csv1Data[i][1] = def
+			num++
 		}
 	}
 
+	fmt.Println("Matched:", num, "out of", len(dictData))
 	fmt.Println("Starting Final Pass: CSV Generation")
 
 	//Final pass is to generated 2nd round CSV file
